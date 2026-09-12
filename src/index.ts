@@ -304,7 +304,7 @@ class PixabayMCPServer {
   private async searchImages(params: PixabaySearchParams) {
     const filteredParams = Object.fromEntries(
       Object.entries(params)
-        .filter(([_, value]) => value !== undefined && value !== null && value !== "")
+        .filter(([, value]) => value !== undefined && value !== null && value !== "")
         .map(([key, value]) => [key, String(value)])
     );
 
@@ -339,7 +339,7 @@ class PixabayMCPServer {
   private async searchVideos(params: PixabayVideoSearchParams) {
     const filteredParams = Object.fromEntries(
       Object.entries(params)
-        .filter(([_, value]) => value !== undefined && value !== null && value !== "")
+        .filter(([, value]) => value !== undefined && value !== null && value !== "")
         .map(([key, value]) => [key, String(value)])
     );
 
@@ -385,7 +385,7 @@ class PixabayMCPServer {
 
     let transport: SSEServerTransport | null = null;
 
-    app.get("/sse", async (req, res) => {
+    app.get("/sse", async (_req, res) => {
       transport = new SSEServerTransport("/messages", res);
       await this.server.connect(transport);
     });
