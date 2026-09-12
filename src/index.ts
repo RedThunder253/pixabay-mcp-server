@@ -230,7 +230,7 @@ app.get("/", (_req, res) => {
   res.status(200).json({ status: "ok", server: "Pixabay MCP Server" });
 });
 
-app.get("/sse", async (req, res) => {
+app.get("/sse", async (_req, res) => {
   const transport = new SSEServerTransport("/messages", res);
   transports.set(transport.sessionId, transport);
 
