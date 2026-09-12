@@ -382,14 +382,22 @@ class PixabayMCPServer {
   async run() {
     const app = express();
     app.use(cors());
+    app.use(express.json());
 
     let transport: SSEServerTransport | null = null;
 
+    // Root endpoint for status checks & discovery
+    app.get("/", (_req, res) => {
+      res.status(200).json({ status: "ok", server: "Pixabay MCP Server" });
+    });
+
+    // SSE endpoint
     app.get("/sse", async (_req, res) => {
       transport = new SSEServerTransport("/messages", res);
       await this.server.connect(transport);
     });
 
+    // Message handler endpoint
     app.post("/messages", async (req, res) => {
       if (transport) {
         await transport.handlePostMessage(req, res);
