@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
+import express from "express";
+import cors from "cors";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -286,14 +288,12 @@ class PixabayMCPServer {
       }
     });
 
-    // Handle resources list (return empty list since we don't provide resources)
     this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
       return {
         resources: [],
       };
     });
 
-    // Handle prompts list (return empty list since we don't provide prompts)
     this.server.setRequestHandler(ListPromptsRequestSchema, async () => {
       return {
         prompts: [],
@@ -302,7 +302,6 @@ class PixabayMCPServer {
   }
 
   private async searchImages(params: PixabaySearchParams) {
-    // Filter out undefined/null values and convert to strings
     const filteredParams = Object.fromEntries(
       Object.entries(params)
         .filter(([_, value]) => value !== undefined && value !== null && value !== "")
@@ -338,7 +337,6 @@ class PixabayMCPServer {
   }
 
   private async searchVideos(params: PixabayVideoSearchParams) {
-    // Filter out undefined/null values and convert to strings
     const filteredParams = Object.fromEntries(
       Object.entries(params)
         .filter(([_, value]) => value !== undefined && value !== null && value !== "")
@@ -382,9 +380,28 @@ class PixabayMCPServer {
   }
 
   async run() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    console.error("Pixabay MCP Server running on stdio");
+    const app = express();
+    app.use(cors());
+
+    let transport: SSEServerTransport | null = null;
+
+    app.get("/sse", async (req, res) => {
+      transport = new SSEServerTransport("/messages", res);
+      await this.server.connect(transport);
+    });
+
+    app.post("/messages", async (req, res) => {
+      if (transport) {
+        await transport.handlePostMessage(req, res);
+      } else {
+        res.status(400).send("SSE session not initialized");
+      }
+    });
+
+    const port = process.env.PORT || 3000;
+    app.listen(port, () => {
+      console.error(`Pixabay MCP Server running on SSE at port ${port}`);
+    });
   }
 }
 
